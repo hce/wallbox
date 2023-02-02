@@ -1,0 +1,4 @@
+initial_connection_timeout = 60
+e3dc = { host = "127.0.0.1", port = 5201 }
+wallbox = { host = "127.0.0.1", port = 5202 }
+phases = "ThreePhase"
