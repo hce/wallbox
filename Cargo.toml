@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 byteorder = "*"
 clap = { version = "*", features = ["derive"] }
+flate2 = "*"
 toml = "*"
 modbus = "*"
 

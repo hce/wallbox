@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate clap;
+extern crate flate2;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -7,6 +8,7 @@ extern crate serde_json;
 extern crate toml;
 
 mod config;
+mod devnull;
 mod e3dc;
 mod mennekes;
 mod pac2200;
@@ -16,9 +18,11 @@ mod energy_meter;
 mod wallbox_manager;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
+use devnull::DevNullFile;
 use e3dc::E3DC;
 use mennekes::Mennekes;
 use pac2200::Pac2200;
+use std::path::PathBuf;
 use timeouter::Timeouter;
 
 use energy_meter::energy_meter;
@@ -48,7 +52,7 @@ enum Commands {
 #[command(args_conflicts_with_subcommands = true)]
 pub struct WallboxManagerParams {
     #[arg(short, long)]
-    pub config_path: std::path::PathBuf,
+    pub config_path: PathBuf,
 }
 
 #[derive(Debug, Args)]
@@ -65,6 +69,12 @@ pub struct EnergyMeterParams {
 
     #[arg(short, long)]
     pub polling_interval: Option<u64>,
+
+    #[arg(short, long)]
+    pub log_to: Option<PathBuf>,
+
+    #[arg(short = 'i', long)]
+    pub log_flush_interval: Option<u64>,
 }
 
 fn main() {
