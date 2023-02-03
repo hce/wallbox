@@ -1,11 +1,11 @@
-use std::thread::{JoinHandle, spawn};
-use std::sync::mpsc::{channel, Sender};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
-use std::io::{Read, Result};
-use std::ops::Add;
 use byteorder::ReadBytesExt;
 use modbus::*;
+use std::io::{Read, Result};
+use std::ops::Add;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{channel, Sender};
+use std::sync::{Arc, Mutex};
+use std::thread::{spawn, JoinHandle};
 
 const WAIT_AFTER_ERROR: u64 = 8;
 
@@ -15,7 +15,7 @@ pub struct Pac2200 {
     params: Arc<Mutex<Option<Pac2200Params>>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pac2200Params {
     pub update: u64,
     pub u_l1: f32,
@@ -51,7 +51,11 @@ pub struct Pac2200Params {
 }
 
 impl Pac2200 {
-    pub fn new(host_name: &str, port: u16, polling_interval: std::time::Duration) -> Result<Pac2200> {
+    pub fn new(
+        host_name: &str,
+        port: u16,
+        polling_interval: std::time::Duration,
+    ) -> Result<Pac2200> {
         let host_name = String::from(host_name);
         let do_run = Arc::new(AtomicBool::new(true));
         let do_run_clone = do_run.clone();
@@ -65,7 +69,10 @@ impl Pac2200 {
                     Ok(mut client) => {
                         while do_run_clone.load(Ordering::Relaxed) {
                             let mut fetch = || {
-                                let registers = client.read_holding_registers(1, 72).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+                                let registers =
+                                    client.read_holding_registers(1, 72).map_err(|e| {
+                                        std::io::Error::new(std::io::ErrorKind::Other, e)
+                                    })?;
                                 let buf = binary::unpack_bytes(&registers);
                                 let mut slice = buf.as_slice();
 
@@ -102,8 +109,8 @@ impl Pac2200 {
 
                                 let frequency = slice.read_f32::<byteorder::BE>()?;
 
-                                let u_avg_ln= slice.read_f32::<byteorder::BE>()?;
-                                let u_avg_ll= slice.read_f32::<byteorder::BE>()?;
+                                let u_avg_ln = slice.read_f32::<byteorder::BE>()?;
+                                let u_avg_ll = slice.read_f32::<byteorder::BE>()?;
                                 let i_avg = slice.read_f32::<byteorder::BE>()?;
 
                                 let p_avg = slice.read_f32::<byteorder::BE>()?;
@@ -114,11 +121,12 @@ impl Pac2200 {
 
                                 let i_n = slice.read_f32::<byteorder::BE>()?;
 
-
                                 let update = std::time::SystemTime::now()
                                     .duration_since(std::time::UNIX_EPOCH)
                                     .map(|r| r.as_secs())
-                                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+                                    .map_err(|e| {
+                                        std::io::Error::new(std::io::ErrorKind::Other, e)
+                                    })?;
                                 Ok::<_, std::io::Error>(Pac2200Params {
                                     update,
                                     u_l1,
@@ -150,7 +158,7 @@ impl Pac2200 {
                                     pva_avg,
                                     pvar_avg,
                                     pf_tot,
-                                    i_n
+                                    i_n,
                                 })
                             };
                             match fetch() {
@@ -158,7 +166,9 @@ impl Pac2200 {
                                     if let Ok(mut p) = params_clone.lock() {
                                         *p = Some(pac2200params);
                                     } else {
-                                        eprintln!("Cannot update params, cannot acquire mutex lock");
+                                        eprintln!(
+                                            "Cannot update params, cannot acquire mutex lock"
+                                        );
                                     }
                                 }
                                 Err(e) => {
