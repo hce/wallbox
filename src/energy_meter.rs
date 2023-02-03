@@ -1,6 +1,6 @@
 use crate::*;
 use std::fs::File;
-use std::io::{BufWriter, Result, Write};
+use std::io::{BufWriter, Error, ErrorKind, Result, Write};
 use std::net::{SocketAddr, TcpStream};
 use std::ops::Add;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -77,6 +77,18 @@ fn handle_requests(
 }
 
 pub fn energy_meter(emp: EnergyMeterParams) -> Result<()> {
+    if emp.polling_interval.is_some() && emp.polling_interval.unwrap() < 1000 {
+        return Err(Error::new(
+            ErrorKind::Other,
+            format!("A polling interval smaller than one second is too low"),
+        ));
+    }
+    if emp.log_flush_interval.is_some() && emp.log_flush_interval.unwrap() < 10 {
+        return Err(Error::new(
+            ErrorKind::Other,
+            format!("A flushing interval smaller than ten seconds is too low"),
+        ));
+    }
     let polling_interval = emp.polling_interval.unwrap_or(1000);
     let polling_interval = Duration::from_millis(polling_interval);
     let pac2200 = Pac2200::new(
