@@ -8,17 +8,22 @@ component is concerned with the wallbox.
 
 This tool has multiple subcommands. They are:
 
-  * wallbox-manager    Charge your electric car with your PV system's surplus energy
-  * energy-meter       Read out, make available and log your energy meter's measurements
-  * decompress-stream  Decompress incomplete gzip streams
+  * wallbox-manager           Charge your electric car with your PV
+                              system's surplus energy
+  * energy-meter              Read out, make available and log your
+                              energy meter's measurements
+  * decompress-stream         Decompress incomplete gzip streams
+  * residual-current-monitor  Monitor and logresidual currents and
+                              take action when defined thresholds are
+                              exceeded (Work in progress!) 
 
 This tool is (currently) fixed to the following hardware that I own
 (physically, it doesn't mean that it runs free software).
 Specifically:
 
-* An e3dc PV system, S10 X Compact
-* A mennekes amtron charge control wallbox (the 11kW flavour)
-* A siemens PAC2200 energy meter with integrated transducers
-
+* An E3DC PV system, S10 X Compact
+* A Mennekes Amtron Charge Control electric vehicle charger (the 11kW flavour)
+* A Siemens PAC2200 energy meter with integrated transducers
+* A Doepke DCTR B-X Hz residual current monitoring system
 
 
