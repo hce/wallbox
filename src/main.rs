@@ -14,6 +14,7 @@ mod mennekes;
 mod pac2200;
 mod timeouter;
 
+mod decompress_stream;
 mod energy_meter;
 mod wallbox_manager;
 
@@ -25,6 +26,7 @@ use pac2200::Pac2200;
 use std::path::PathBuf;
 use timeouter::Timeouter;
 
+use decompress_stream::decompress_stream;
 use energy_meter::energy_meter;
 use wallbox_manager::wallbox_manager;
 
@@ -46,6 +48,9 @@ enum Commands {
 
     #[command(arg_required_else_help = true)]
     EnergyMeter(EnergyMeterParams),
+
+    #[command(arg_required_else_help = true)]
+    DecompressStream(DecompressStreamParams),
 }
 
 #[derive(Debug, Args)]
@@ -77,10 +82,18 @@ pub struct EnergyMeterParams {
     pub log_flush_interval: Option<u64>,
 }
 
+#[derive(Debug, Args)]
+#[command(args_conflicts_with_subcommands = true)]
+pub struct DecompressStreamParams {
+    #[arg(short, long)]
+    pub file_name: PathBuf,
+}
+
 fn main() {
     let args = Cli::parse();
 
     let result = match args.command {
+        Commands::DecompressStream(dsp) => decompress_stream(dsp),
         Commands::EnergyMeter(emp) => energy_meter(emp),
         Commands::WallboxManager(cmp) => wallbox_manager(cmp),
     };
