@@ -18,6 +18,7 @@ fn handle_requests(
     new_sockets: Receiver<(TcpStream, SocketAddr)>,
     log_to: Option<PathBuf>,
     log_interval: Duration,
+    log_to_console: bool,
 ) {
     let mut sockets: Vec<(TcpStream, SocketAddr)> = Vec::new();
 
@@ -51,6 +52,12 @@ fn handle_requests(
         }
         if let Some(values) = dctr.get_current_params() {
             cur_values = values;
+            if log_to_console {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&cur_values).expect("serde_json pretty")
+                );
+            }
         }
         let mut load = serde_json::to_string(&cur_values).expect("serde_json");
         load.push('\n');
@@ -109,6 +116,7 @@ pub fn residual_current_monitor(rcm: ResidualCurrentMonitorParams) -> Result<()>
             rcm.log_flush_interval
                 .map(|i| Duration::from_secs(i))
                 .unwrap_or(Duration::from_secs(3600)),
+            rcm.write_to_console.unwrap_or(false),
         )
     });
     for socket in listener.incoming() {

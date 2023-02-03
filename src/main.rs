@@ -92,6 +92,9 @@ pub struct EnergyMeterParams {
 
     #[arg(short = 'i', long)]
     pub log_flush_interval: Option<u64>,
+
+    #[arg(short = 'c', long)]
+    pub write_to_console: Option<bool>,
 }
 
 #[derive(Debug, Args)]
@@ -121,6 +124,9 @@ pub struct ResidualCurrentMonitorParams {
 
     #[arg(short = 'i', long)]
     pub log_flush_interval: Option<u64>,
+
+    #[arg(short = 'c', long)]
+    pub write_to_console: Option<bool>,
 }
 
 fn main() {
