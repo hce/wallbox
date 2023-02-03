@@ -1,13 +1,14 @@
-use std::thread::{JoinHandle, spawn};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
-use std::io::{Read, Result};
 use byteorder::ReadBytesExt;
 use modbus::*;
+use std::io::{Read, Result};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::thread::{spawn, JoinHandle};
 
 const WAIT_AFTER_ERROR: u64 = 8;
 
 pub struct E3DC {
+    #[allow(unused)]
     handler: JoinHandle<()>,
     do_run: Arc<AtomicBool>,
     params: Arc<Mutex<Option<E3DCParams>>>,
@@ -59,7 +60,10 @@ impl E3DC {
                         while do_run_clone.load(Ordering::Relaxed) {
                             let registers = client.read_holding_registers(40000, 126);
                             if registers.is_err() {
-                                eprintln!("Error while reading from e3dc system: {:?}", registers.err());
+                                eprintln!(
+                                    "Error while reading from e3dc system: {:?}",
+                                    registers.err()
+                                );
                                 break;
                             } else {
                                 let registers = registers.unwrap();
@@ -75,8 +79,10 @@ impl E3DC {
                                     let mut str_buf = [0; 32];
                                     for _i in 0..4 {
                                         slice.read_exact(&mut str_buf)?;
-                                        let version_string = String::from_utf8(str_buf.to_vec()).map_err(|e|
-                                            std::io::Error::new(std::io::ErrorKind::Other, e))?;
+                                        let version_string = String::from_utf8(str_buf.to_vec())
+                                            .map_err(|e| {
+                                                std::io::Error::new(std::io::ErrorKind::Other, e)
+                                            })?;
                                         version_strings.push(version_string);
                                     }
 
@@ -89,13 +95,16 @@ impl E3DC {
                                     let misc_3 = read_big_little_i32(&mut slice)?;
                                     let autarky = slice.read_u8()?;
                                     let self_utilisation = slice.read_u8()?;
-                                    let akku_charge_percentage = slice.read_u16::<byteorder::BE>()?;
+                                    let akku_charge_percentage =
+                                        slice.read_u16::<byteorder::BE>()?;
                                     let emergency_power = slice.read_u16::<byteorder::BE>()?;
 
                                     let update = std::time::SystemTime::now()
                                         .duration_since(std::time::UNIX_EPOCH)
                                         .map(|r| r.as_secs())
-                                        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+                                        .map_err(|e| {
+                                            std::io::Error::new(std::io::ErrorKind::Other, e)
+                                        })?;
                                     Ok::<_, std::io::Error>(E3DCParams {
                                         update,
                                         magic,
@@ -121,7 +130,9 @@ impl E3DC {
                                         if let Ok(mut p) = params_clone.lock() {
                                             *p = Some(e3dcparams);
                                         } else {
-                                            eprintln!("Cannot update params, cannot acquire mutex lock");
+                                            eprintln!(
+                                                "Cannot update params, cannot acquire mutex lock"
+                                            );
                                         }
                                     }
                                     Err(e) => {

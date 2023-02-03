@@ -1,16 +1,24 @@
 # wallbox
-Wallbox load management
 
-I'm developing this for my own purposes, to charge an electric vehicle
-with surplus power from a solar power plant. This is work in progress.
-It is not yet configurable.
+Wallbox load management. Charge your car with the surplus energy of
+your PV system. Read out and log the parameters of your energy meter.
+Monitor your residual current monitor system. I'm developing this for
+my own purposes. The name is a bit of a misnomer, as only one
+component is concerned with the wallbox.
 
-The algorithm will change over time. Right now it is the following:
+This tool has multiple subcommands. They are:
 
-* Read from the PV system the PV power and the house power, then
-  compute the surplus power.
-* If the surplus power is greater than 900 Watts, increase the vehicle
-  loading current by 1 Ampere.
-* Conversely, if the surplus power is negative, decrease the vehicle
-  loading current by as many amps as is required to not draw any power
-  from the power grid.
+  * wallbox-manager    Charge your electric car with your PV system's surplus energy
+  * energy-meter       Read out, make available and log your energy meter's measurements
+  * decompress-stream  Decompress incomplete gzip streams
+
+This tool is (currently) fixed to the following hardware that I own
+(physically, it doesn't mean that it runs free software).
+Specifically:
+
+* An e3dc PV system, S10 X Compact
+* A mennekes amtron charge control wallbox (the 11kW flavour)
+* A siemens PAC2200 energy meter with integrated transducers
+
+
+

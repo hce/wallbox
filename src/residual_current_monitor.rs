@@ -13,7 +13,7 @@ use flate2::Compression;
 
 fn handle_requests(
     do_run: Arc<AtomicBool>,
-    pac: Pac2200,
+    dctr: Dctr,
     interval: Duration,
     new_sockets: Receiver<(TcpStream, SocketAddr)>,
     log_to: Option<PathBuf>,
@@ -36,7 +36,7 @@ fn handle_requests(
 
     let mut cur_values;
     loop {
-        if let Some(values) = pac.get_current_params() {
+        if let Some(values) = dctr.get_current_params() {
             cur_values = values;
             break;
         }
@@ -49,7 +49,7 @@ fn handle_requests(
             logger.flush().expect("flush");
             next_flush = SystemTime::now().add(log_interval);
         }
-        if let Some(values) = pac.get_current_params() {
+        if let Some(values) = dctr.get_current_params() {
             cur_values = values;
         }
         let mut load = serde_json::to_string(&cur_values).expect("serde_json");
@@ -76,28 +76,24 @@ fn handle_requests(
     }
 }
 
-pub fn energy_meter(emp: EnergyMeterParams) -> Result<()> {
-    if emp.polling_interval.is_some() && emp.polling_interval.unwrap() < 1000 {
+pub fn residual_current_monitor(rcm: ResidualCurrentMonitorParams) -> Result<()> {
+    if rcm.polling_interval.is_some() && rcm.polling_interval.unwrap() < 1000 {
         return Err(Error::new(
             ErrorKind::Other,
             format!("A polling interval smaller than one second is too low"),
         ));
     }
-    if emp.log_flush_interval.is_some() && emp.log_flush_interval.unwrap() < 10 {
+    if rcm.log_flush_interval.is_some() && rcm.log_flush_interval.unwrap() < 10 {
         return Err(Error::new(
             ErrorKind::Other,
             format!("A flushing interval smaller than ten seconds is too low"),
         ));
     }
-    let polling_interval = emp.polling_interval.unwrap_or(1000);
+    let polling_interval = rcm.polling_interval.unwrap_or(1000);
     let polling_interval = Duration::from_millis(polling_interval);
-    let pac2200 = Pac2200::new(
-        &emp.meter_host,
-        emp.meter_port.unwrap_or(502),
-        polling_interval,
-    )?;
+    let dctr = Dctr::new(&rcm.host_name, rcm.port.unwrap_or(502), polling_interval)?;
 
-    let bind_to = emp.bind_to.unwrap_or(String::from("localhost:1723"));
+    let bind_to = rcm.bind_to.unwrap_or(String::from("localhost:2317"));
     let listener = std::net::TcpListener::bind(bind_to)?;
     listener.set_nonblocking(false)?;
     let (send_socket, recv_socket) = channel();
@@ -106,11 +102,11 @@ pub fn energy_meter(emp: EnergyMeterParams) -> Result<()> {
     std::thread::spawn(move || {
         handle_requests(
             do_run_clone,
-            pac2200,
+            dctr,
             polling_interval,
             recv_socket,
-            emp.log_to,
-            emp.log_flush_interval
+            rcm.log_to,
+            rcm.log_flush_interval
                 .map(|i| Duration::from_secs(i))
                 .unwrap_or(Duration::from_secs(3600)),
         )

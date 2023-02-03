@@ -1,4 +1,3 @@
-use std::io::Result;
 use std::ops::Add;
 
 pub struct Timeouter {

@@ -3,13 +3,13 @@ use modbus::*;
 use std::io::{Read, Result};
 use std::ops::Add;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread::{spawn, JoinHandle};
 
 const WAIT_AFTER_ERROR: u64 = 8;
 
 pub struct Pac2200 {
+    #[allow(unused)]
     handler: JoinHandle<()>,
     do_run: Arc<AtomicBool>,
     params: Arc<Mutex<Option<Pac2200Params>>>,
