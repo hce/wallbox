@@ -1,6 +1,6 @@
 use byteorder::ReadBytesExt;
 use modbus::*;
-use std::io::{Read, Result};
+use std::io::{ErrorKind, Read, Result};
 use std::ops::Add;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -68,6 +68,14 @@ impl Default for AlarmBitField {
     }
 }
 
+fn boolbit((b, pos): (bool, u8)) -> u16 {
+    if b {
+        1 << pos
+    } else {
+        0
+    }
+}
+
 impl AlarmBitField {
     pub fn from_int(mut i: u16) -> AlarmBitField {
         let ac_gt10khz = (i & 1) == 1;
@@ -95,6 +103,22 @@ impl AlarmBitField {
             ac_gt1khz,
             ac_gt10khz,
         }
+    }
+
+    pub fn to_int(&self) -> u16 {
+        [
+            (self.dc, 7),
+            (self.ac_total, 6),
+            (self.ac_50hz, 5),
+            (self.ac_lt100hz, 4),
+            (self.ac_150hz, 3),
+            (self.ac_100hz_1khz, 2),
+            (self.ac_gt1khz, 1),
+            (self.ac_gt10khz, 0),
+        ]
+        .into_iter()
+        .map(boolbit)
+        .fold(0, |i, acc| i + acc)
     }
 }
 
@@ -221,6 +245,12 @@ impl Dctr {
             eprintln!("Unable to acquire mutex lock when fetching params!");
             None
         }
+    }
+
+    #[allow(unused)]
+    pub fn set_active_alarms_a(&self, active_alarms: AlarmBitField) -> Result<()> {
+        let bits = active_alarms.to_int();
+        Err(std::io::Error::new(ErrorKind::Other, "Not yet implemented"))
     }
 }
 
