@@ -54,22 +54,44 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
         }
 
         if mennekesparams.control_pilot == 0 {
-            eprintln!("No vehicle connected, setting MAX_AMPS to 8");
-            mennekes.set_amps(8);
+            eprintln!(
+                "No vehicle connected, setting MAX_AMPS to the minimum of {}A",
+                config.min_amp
+            );
+            mennekes.set_amps(config.min_amp);
         } else {
-            if mennekesparams.charging_duration < 180 {
-                eprintln!("Vehicle connected for less than 3 minutes, signalling 8 amps");
-                mennekes.set_amps(8);
+            if mennekesparams.charging_duration < config.initial_phase_duration {
+                eprintln!(
+                    "Vehicle connected for less than {} seconds, signalling {} amps",
+                    config.initial_phase_duration, config.min_amp
+                );
+                mennekes.set_amps(config.min_amp);
             } else {
                 let available_power = e3dcparams.pv_power - e3dcparams.haus_power;
                 let charging_power = mennekesparams.power as i32;
-                if available_power < charging_power && mennekesparams.hems_current > 8 {
-                    eprintln!("Less power available than required, reducing charging current");
-                    mennekes.set_amps(mennekesparams.hems_current - 1);
-                } else if available_power > (charging_power + 900)
-                    && mennekesparams.hems_current < 16
+                let step_power =
+                    (1/* amps */) * config.phase_voltage as i32 * config.phases.number() as i32;
+                let step_power_with_hysteresis = step_power + config.hysteresis_watts;
+                if available_power < charging_power && mennekesparams.hems_current > config.min_amp
                 {
-                    eprintln!("Some excessive power is available, increasing charging current!");
+                    let num_amps = std::cmp::max(
+                        config.min_amp,
+                        std::cmp::min(
+                            config.max_amp,
+                            ((available_power as f64) / (step_power as f64)).floor() as u16,
+                        ),
+                    );
+                    eprintln!(
+                        "Less power available than required, setting charging current to {} amps",
+                        num_amps
+                    );
+                    mennekes.set_amps(num_amps);
+                } else if available_power > (charging_power + step_power_with_hysteresis)
+                    && mennekesparams.hems_current < config.max_amp
+                {
+                    eprintln!(
+                        "Some excessive power is available, increasing charging current by 1 amp"
+                    );
                     mennekes.set_amps(mennekesparams.hems_current + 1);
                 }
             }
