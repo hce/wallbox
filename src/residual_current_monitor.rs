@@ -11,6 +11,11 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use flate2::write::GzEncoder;
 use flate2::Compression;
 
+enum AlarmType {
+    A,
+    B,
+}
+
 fn handle_requests(
     do_run: Arc<AtomicBool>,
     dctr: Dctr,
@@ -83,6 +88,34 @@ fn handle_requests(
     }
 }
 
+fn handle_alarm(
+    do_run: Arc<AtomicBool>,
+    polling_interval: Duration,
+    dctr: Dctr,
+    which_alarm: AlarmType,
+    alarm_command: String,
+) {
+    while do_run.load(Ordering::Relaxed) {
+        if let Some(data) = dctr.get_current_params() {
+            let alarm = match which_alarm {
+                AlarmType::A => data.raised_alarm_a.raised(),
+                AlarmType::B => data.raised_alarm_b.raised(),
+            };
+            if alarm {
+                let parts = alarm_command.split(" ").collect::<Vec<&str>>();
+                let parts = parts.as_slice();
+                if let Err(e) = std::process::Command::new(parts[0])
+                    .args(&parts[1..])
+                    .spawn()
+                {
+                    eprintln!("Error running alarm reaction command: {:?}", e)
+                }
+            }
+        }
+        std::thread::sleep(polling_interval);
+    }
+}
+
 pub fn residual_current_monitor(rcm: ResidualCurrentMonitorParams) -> Result<()> {
     if rcm.polling_interval.is_some() && rcm.polling_interval.unwrap() < 1000 {
         return Err(Error::new(
@@ -105,20 +138,49 @@ pub fn residual_current_monitor(rcm: ResidualCurrentMonitorParams) -> Result<()>
     listener.set_nonblocking(false)?;
     let (send_socket, recv_socket) = channel();
     let do_run = Arc::new(AtomicBool::new(true));
-    let do_run_clone = do_run.clone();
-    std::thread::spawn(move || {
-        handle_requests(
-            do_run_clone,
-            dctr,
-            polling_interval,
-            recv_socket,
-            rcm.log_to,
-            rcm.log_flush_interval
-                .map(|i| Duration::from_secs(i))
-                .unwrap_or(Duration::from_secs(3600)),
-            rcm.write_to_console.unwrap_or(false),
-        )
-    });
+    {
+        let do_run = do_run.clone();
+        let dctr = dctr.clone();
+        std::thread::spawn(move || {
+            handle_requests(
+                do_run,
+                dctr,
+                polling_interval,
+                recv_socket,
+                rcm.log_to,
+                rcm.log_flush_interval
+                    .map(|i| Duration::from_secs(i))
+                    .unwrap_or(Duration::from_secs(3600)),
+                rcm.write_to_console.unwrap_or(false),
+            )
+        });
+    }
+    if let Some(alarm_a_command) = rcm.alarm_a_command {
+        let do_run = do_run.clone();
+        let dctr = dctr.clone();
+        std::thread::spawn(move || {
+            handle_alarm(
+                do_run,
+                polling_interval,
+                dctr,
+                AlarmType::A,
+                alarm_a_command,
+            )
+        });
+    }
+    if let Some(alarm_b_command) = rcm.alarm_b_command {
+        let do_run = do_run.clone();
+        let dctr = dctr.clone();
+        std::thread::spawn(move || {
+            handle_alarm(
+                do_run,
+                polling_interval,
+                dctr,
+                AlarmType::B,
+                alarm_b_command,
+            )
+        });
+    }
     for socket in listener.incoming() {
         if let Ok(socket) = socket {
             match socket.peer_addr() {

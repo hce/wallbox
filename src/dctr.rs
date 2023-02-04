@@ -4,15 +4,22 @@ use std::io::{ErrorKind, Read, Result};
 use std::ops::Add;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::thread::{spawn, JoinHandle};
+use std::thread::spawn;
 
 const WAIT_AFTER_ERROR: u64 = 8;
 
 pub struct Dctr {
-    #[allow(unused)]
-    handler: JoinHandle<()>,
     do_run: Arc<AtomicBool>,
     params: Arc<Mutex<Option<DctrParams>>>,
+}
+
+impl Clone for Dctr {
+    fn clone(&self) -> Self {
+        Dctr {
+            do_run: self.do_run.clone(),
+            params: self.params.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,6 +36,7 @@ pub struct DctrParams {
     pub alarm_delay: u16,
 }
 
+/// Residual currents, categorized by frequency
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Currents {
     pub dc: u16,
@@ -41,6 +49,8 @@ pub struct Currents {
     pub ac_gt10khz: u16,
 }
 
+/// If the residual current exceeds a threshold, an alarm is raised.
+/// (Whether the guards will wait to ask questions is up to the policy definition)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AlarmBitField {
     pub dc: bool,
@@ -68,6 +78,7 @@ impl Default for AlarmBitField {
     }
 }
 
+/// Helper function to a tuple of a boolean and a shift amount to an integer
 fn boolbit((b, pos): (bool, u8)) -> u16 {
     if b {
         1 << pos
@@ -77,6 +88,7 @@ fn boolbit((b, pos): (bool, u8)) -> u16 {
 }
 
 impl AlarmBitField {
+    /// Create a bitfield from an integer
     pub fn from_int(mut i: u16) -> AlarmBitField {
         let ac_gt10khz = (i & 1) == 1;
         i >>= 1;
@@ -105,6 +117,7 @@ impl AlarmBitField {
         }
     }
 
+    /// Convert the bitfield to an integer
     pub fn to_int(&self) -> u16 {
         [
             (self.dc, 7),
@@ -119,6 +132,18 @@ impl AlarmBitField {
         .into_iter()
         .map(boolbit)
         .fold(0, |i, acc| i + acc)
+    }
+
+    /// Return whether an alarm was raised
+    pub fn raised(&self) -> bool {
+        self.ac_gt10khz
+            || self.ac_gt1khz
+            || self.ac_100hz_1khz
+            || self.ac_150hz
+            || self.ac_lt100hz
+            || self.ac_50hz
+            || self.ac_total
+            || self.dc
     }
 }
 
@@ -150,7 +175,7 @@ impl Dctr {
         let do_run_clone = do_run.clone();
         let params = Arc::new(Mutex::new(None));
         let params_clone = params.clone();
-        let handler = spawn(move || {
+        spawn(move || {
             while do_run_clone.load(Ordering::Relaxed) {
                 let mut cfg = tcp::Config::default();
                 cfg.tcp_port = port;
@@ -231,16 +256,12 @@ impl Dctr {
             ()
         });
 
-        Ok(Dctr {
-            handler,
-            do_run,
-            params,
-        })
+        Ok(Dctr { do_run, params })
     }
 
     pub fn get_current_params(&self) -> Option<DctrParams> {
-        if let Ok(mut l) = self.params.lock() {
-            l.take()
+        if let Ok(l) = self.params.lock() {
+            l.clone()
         } else {
             eprintln!("Unable to acquire mutex lock when fetching params!");
             None

@@ -107,26 +107,56 @@ pub struct DecompressStreamParams {
 #[derive(Debug, Args)]
 #[command(args_conflicts_with_subcommands = true)]
 pub struct ResidualCurrentMonitorParams {
+    /// The RCM's hostname to connect to. Please note that the
+    /// Doepke RCM's have modbus disabled by default and you'll
+    /// need to use their proprietary software to enable modbus.
+    /// This usually has to be done only once per RCM. Do note
+    /// that not all versions of the software support enabling
+    /// the modbus; if in doubt, contact the manufacturer for
+    /// the right version.
     #[arg(short = 'H', long)]
     pub host_name: String,
 
+    /// The RCM's port to connect to
     #[arg(short = 'P', long)]
     pub port: Option<u16>,
 
+    /// The host+port to bind to. TCP connections can be made
+    /// to this port to receive current data from the RCM system.
     #[arg(short, long)]
     pub bind_to: Option<String>,
 
+    /// The polling interval in seconds. 1 is a reasonable default.
     #[arg(short, long)]
     pub polling_interval: Option<u64>,
 
+    /// A *directory* to log to. The log file name is based
+    /// on the current EPOCH time so old logs aren't overwritten
+    /// on restart. Since the logs are compressed, we cannot simply
+    /// use the append mode reliably.
     #[arg(short, long)]
     pub log_to: Option<PathBuf>,
 
+    /// The log flush interval in seconds. This
+    /// can be a high value such as 3600 to preserve
+    /// the lifetime of flash memory
     #[arg(short = 'i', long)]
     pub log_flush_interval: Option<u64>,
 
+    /// Log the output to the console
+    /// the process is attached to
     #[arg(short = 'c', long)]
     pub write_to_console: Option<bool>,
+
+    /// A unix command to execute when the RCM triggers
+    /// the alarm of type A.
+    #[arg(long)]
+    pub alarm_a_command: Option<String>,
+
+    /// A unix command to execute when the RCM triggers
+    /// the alarm of type B.
+    #[arg(long)]
+    pub alarm_b_command: Option<String>,
 }
 
 fn main() {
