@@ -1,10 +1,18 @@
 # wallbox
 
-Wallbox load management. Charge your car with the surplus energy of
-your PV system. Read out and log the parameters of your energy meter.
-Monitor your residual current monitor system. I'm developing this for
-my own purposes. The name is a bit of a misnomer, as only one
-component is concerned with the wallbox.
+## Important note
+
+This code is CURRENTLY UNTESTED. The EV charger will be installed in
+roughly half a month, at which point I'll have the chance to test it
+in pracitce. ABSOLUTELY use at your own risk!
+
+## What is it?
+
+EV vehicle charging management. Charge your car with the surplus
+energy of your PV system. Read out and log the parameters of your
+energy meter. Monitor your residual current monitor system. I'm
+developing this for my own purposes. The name is a bit of a misnomer,
+as only one component is concerned with the wallbox.
 
 This tool has multiple subcommands. They are:
 
@@ -18,7 +26,7 @@ This tool has multiple subcommands. They are:
                               exceeded (Work in progress!) 
 
 This tool is (currently) fixed to the following hardware that I own
-(physically, it doesn't mean that it runs free software).
+myself (physically, it doesn't mean that it runs free software).
 Specifically:
 
 * An E3DC PV system, S10 X Compact
