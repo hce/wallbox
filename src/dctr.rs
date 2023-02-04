@@ -20,12 +20,12 @@ pub struct DctrParams {
     pub update: u64,
     pub validity: u16,
     pub f_i: Currents,
-    pub alarm_a: u16,
-    pub alarm_b: u16,
+    pub raised_alarm_a: AlarmBitField,
+    pub raised_alarm_b: AlarmBitField,
     pub thresholds_a: Currents,
-    pub active_alarms_a: u16,
+    pub activated_alarms_a: AlarmBitField,
     pub thresholds_b: Currents,
-    pub active_alarms_b: u16,
+    pub activated_alarms_b: AlarmBitField,
     pub alarm_delay: u16,
 }
 
@@ -39,6 +39,63 @@ pub struct Currents {
     pub ac_100hz_1khz: u16,
     pub ac_gt1khz: u16,
     pub ac_gt10khz: u16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AlarmBitField {
+    pub dc: bool,
+    pub ac_total: bool,
+    pub ac_50hz: bool,
+    pub ac_lt100hz: bool,
+    pub ac_150hz: bool,
+    pub ac_100hz_1khz: bool,
+    pub ac_gt1khz: bool,
+    pub ac_gt10khz: bool,
+}
+
+impl Default for AlarmBitField {
+    fn default() -> Self {
+        AlarmBitField {
+            dc: false,
+            ac_total: false,
+            ac_50hz: false,
+            ac_lt100hz: false,
+            ac_150hz: false,
+            ac_100hz_1khz: false,
+            ac_gt1khz: false,
+            ac_gt10khz: false,
+        }
+    }
+}
+
+impl AlarmBitField {
+    pub fn from_int(mut i: u16) -> AlarmBitField {
+        let ac_gt10khz = (i & 1) == 1;
+        i >>= 1;
+        let ac_gt1khz = (i & 1) == 1;
+        i >>= 1;
+        let ac_100hz_1khz = (i & 1) == 1;
+        i >>= 1;
+        let ac_150hz = (i & 1) == 1;
+        i >>= 1;
+        let ac_lt100hz = (i & 1) == 1;
+        i >>= 1;
+        let ac_50hz = (i & 1) == 1;
+        i >>= 1;
+        let ac_total = (i & 1) == 1;
+        i >>= 1;
+        let dc = (i & 1) == 1;
+        AlarmBitField {
+            dc,
+            ac_total,
+            ac_50hz,
+            ac_lt100hz,
+            ac_150hz,
+            ac_100hz_1khz,
+            ac_gt1khz,
+            ac_gt10khz,
+        }
+    }
 }
 
 fn read_currents<R: Read>(slice: &mut R) -> Result<Currents> {
@@ -110,12 +167,12 @@ impl Dctr {
                                     update,
                                     validity,
                                     f_i,
-                                    alarm_a,
-                                    alarm_b,
+                                    raised_alarm_a: AlarmBitField::from_int(alarm_a),
+                                    raised_alarm_b: AlarmBitField::from_int(alarm_b),
                                     thresholds_a,
-                                    active_alarms_a,
+                                    activated_alarms_a: AlarmBitField::from_int(active_alarms_a),
                                     thresholds_b,
-                                    active_alarms_b,
+                                    activated_alarms_b: AlarmBitField::from_int(active_alarms_b),
                                     alarm_delay,
                                 })
                             };
