@@ -120,9 +120,9 @@ impl Dctr {
                                 })
                             };
                             match fetch() {
-                                Ok(pac2200params) => {
+                                Ok(dctrparams) => {
                                     if let Ok(mut p) = params_clone.lock() {
-                                        *p = Some(pac2200params);
+                                        *p = Some(dctrparams);
                                     } else {
                                         eprintln!(
                                             "Cannot update params, cannot acquire mutex lock"
@@ -130,7 +130,7 @@ impl Dctr {
                                     }
                                 }
                                 Err(e) => {
-                                    eprintln!("Error while reading from pac2200 meter: {:?}", e);
+                                    eprintln!("Error while reading from the RCM system: {:?}", e);
                                     break;
                                 }
                             }
@@ -142,7 +142,7 @@ impl Dctr {
                         }
                     }
                     Err(e) => {
-                        eprintln!("Error while connecting to pac2200 meter: {:?}", e);
+                        eprintln!("Error while connecting to RCM system: {:?}", e);
                     }
                 }
                 std::thread::sleep(std::time::Duration::from_secs(WAIT_AFTER_ERROR));
