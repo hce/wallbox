@@ -19,7 +19,12 @@ phases = "ThreePhase"
 # reasonable default.
 initial_phase_duration = 180
 
-# How many amps to set when no vehicle is connected
+# How many amps to set when no vehicle is connected.
+# You should not set this to zero for the following
+# reason: Some vehicles will reject the charging
+# settion altogether if initially signalled a maximum
+# current of zero. Thus, set it to something higher than
+# that. 8 Amps is a reasonable default.
 default_amps = 8
 
 # The voltage per phase, used to compute ther power per amp
@@ -41,50 +46,39 @@ hysteresis_watts = 200
 [rfid.041dxxxxxxxxxx]
 # The name of the RFID tag
 name = "ADAC Ladekarte"
-# Charge regardless
-pv_only = true
-# The minimum current to use when charging
-min_amp = 16
+# Charge regardless of the sun shining or not
+pv_only = false
+# The minimum current to use when charging. This should be
+# set to the minimum value that the vehicle can handle.
+# For example, some vehicles can handle no less than 8 amps.
+# So, set min_amp to 8 Amps. If you want the charging process
+# to stop completely when there is not enough solar power available,
+# set the pv_only parameter to true in addition.
+min_amp = 8
 # The maximum current supported by the EV charging station
 max_amp = 16
 
 [rfid.046bxxxxxxxxxx]
-# The name of the RFID tag
 name = "Maria"
-# Only charge with PV energy
 pv_only = true
-# The minimum current to use when charging
 min_amp = 8
-# The maximum current supported by the EV charging station
 max_amp = 16
 
 [rfid.042Exxxxxxxxxx]
-# The name of the RFID tag
 name = "misc 1"
-# Only charge with PV energy
 pv_only = true
-# The minimum current to use when charging
 min_amp = 8
-# The maximum current supported by the EV charging station
 max_amp = 16
 
 [rfid.0435xxxxxxxxxx]
-# The name of the RFID tag
 name = "misc 2"
-# Only charge with PV energy
-pv_only = true
-# The minimum current to use when charging
+pv_only = false
 min_amp = 8
-# The maximum current supported by the EV charging station
 max_amp = 16
 
 [rfid.0479xxxxxxxxxx]
-# The name of the RFID tag
 name = "misc 3"
-# Only charge with PV energy
 pv_only = true
-# The minimum current to use when charging
 min_amp = 8
-# The maximum current supported by the EV charging station
 max_amp = 16
 
