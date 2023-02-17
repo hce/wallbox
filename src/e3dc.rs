@@ -14,7 +14,7 @@ pub struct E3DC {
     params: Arc<Mutex<Option<E3DCParams>>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct E3DCParams {
     pub update: u64,
     pub magic: u16,

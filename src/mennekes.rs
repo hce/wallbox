@@ -17,20 +17,23 @@ pub struct Mennekes {
     action: Sender<MennekesAction>,
 }
 
+#[derive(Clone)]
 struct SetAmpsAction {
     pub max_hems_current: u16,
 }
 
+#[derive(Clone)]
 struct AuthorizeUserAction {
     pub user_id: String,
 }
 
+#[derive(Clone)]
 enum MennekesAction {
     SetAmps(SetAmpsAction),
     AuthorizeUser(AuthorizeUserAction),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct MennekesParams {
     pub update: u64,
     pub control_pilot: u16,

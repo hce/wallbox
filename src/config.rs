@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub pac2200: Option<ModbusConnection>,
@@ -6,10 +8,19 @@ pub struct Config {
     pub initial_connection_timeout: u64,
     pub phases: PhasesConfig,
     pub phase_voltage: u16,
-    pub min_amp: u16,
-    pub max_amp: u16,
+    pub default_amps: u16,
     pub initial_phase_duration: u32,
     pub hysteresis_watts: i32,
+    pub rfid: HashMap<String, ConfigRfid>,
+    pub bind_to: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConfigRfid {
+    pub name: String,
+    pub pv_only: bool,
+    pub min_amp: u16,
+    pub max_amp: u16,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

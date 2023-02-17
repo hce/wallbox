@@ -11,12 +11,6 @@ wallbox = { host = "127.0.0.1", port = 5202 }
 # OnePhase or ThreePhase, this is used to compute the power per amp
 phases = "ThreePhase"
 
-# The minimum current to use when charging
-min_amp = 8
-
-# The maximum current supported by the EV charging station
-max_amp = 16
-
 # After a vehicle is connected and starts to charge, use the min_amp
 # setting regardless of the PV power available for this many seconds.
 # The primary purpose for this setting is that some vehicles get
@@ -24,6 +18,9 @@ max_amp = 16
 # immediately after being connected. 180 seconds should be a
 # reasonable default.
 initial_phase_duration = 180
+
+# How many amps to set when no vehicle is connected
+default_amps = 8
 
 # The voltage per phase, used to compute ther power per amp
 phase_voltage = 230
@@ -39,3 +36,55 @@ phase_voltage = 230
 # of surplus power has to be 890 Watts before the increase
 # from 8 Amps to 9 Amps happens.
 hysteresis_watts = 200
+
+
+[rfid.041dxxxxxxxxxx]
+# The name of the RFID tag
+name = "ADAC Ladekarte"
+# Charge regardless
+pv_only = true
+# The minimum current to use when charging
+min_amp = 16
+# The maximum current supported by the EV charging station
+max_amp = 16
+
+[rfid.046bxxxxxxxxxx]
+# The name of the RFID tag
+name = "Maria"
+# Only charge with PV energy
+pv_only = true
+# The minimum current to use when charging
+min_amp = 8
+# The maximum current supported by the EV charging station
+max_amp = 16
+
+[rfid.042Exxxxxxxxxx]
+# The name of the RFID tag
+name = "misc 1"
+# Only charge with PV energy
+pv_only = true
+# The minimum current to use when charging
+min_amp = 8
+# The maximum current supported by the EV charging station
+max_amp = 16
+
+[rfid.0435xxxxxxxxxx]
+# The name of the RFID tag
+name = "misc 2"
+# Only charge with PV energy
+pv_only = true
+# The minimum current to use when charging
+min_amp = 8
+# The maximum current supported by the EV charging station
+max_amp = 16
+
+[rfid.0479xxxxxxxxxx]
+# The name of the RFID tag
+name = "misc 3"
+# Only charge with PV energy
+pv_only = true
+# The minimum current to use when charging
+min_amp = 8
+# The maximum current supported by the EV charging station
+max_amp = 16
+
