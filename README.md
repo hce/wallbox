@@ -2,9 +2,9 @@
 
 ## Important note
 
-The code that adjusts the charging amount is CURRENTLY UNTESTED. The EV charger
-will be installed in roughly half a month, at which point I'll have the chance
-to test it in pracitce. ABSOLUTELY use at your own risk!
+The code that adjusts the charging amount HAS RECEIVED LITTLE TESTING YET. The
+EV charger was installed today, and I'll probably make adjustments and fine
+tune the code over time. USE AT YOUR OWN RISK!!
 
 ## What is it?
 
