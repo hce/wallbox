@@ -2,7 +2,7 @@
 
 ## Important note
 
-The code that adjusts the charging amount HAS RECEIVED LITTLE TESTING YET. The
+The code that adjusts the charging power HAS RECEIVED LITTLE TESTING YET. The
 EV charger was installed today, and I'll probably make adjustments and fine
 tune the code over time. USE AT YOUR OWN RISK!!
 
