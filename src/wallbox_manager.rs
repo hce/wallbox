@@ -1,6 +1,7 @@
 use crate::e3dc::E3DCParams;
 use crate::mennekes::MennekesParams;
 use crate::*;
+use log::{debug, error, warn};
 use std::io::{Result, Write};
 use std::net::{SocketAddr, TcpStream};
 use std::sync::mpsc::{channel, Receiver};
@@ -12,6 +13,23 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
         let config_file = std::fs::read_to_string(cmp.config_path).expect("Config file");
         toml::from_str(&config_file).expect("TOML parsing")
     };
+
+    fern::Dispatch::new()
+        // Perform allocation-free log formatting
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                "{}[{}][{}] {}",
+                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                record.target(),
+                record.level(),
+                message
+            ))
+        })
+        .level(log::LevelFilter::Info)
+        .chain(std::io::stdout())
+        .chain(fern::log_file("wallbox-manager.log")?)
+        .apply()
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
     let e3dc = Arc::new(
         E3DC::new(
@@ -42,9 +60,9 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                 if let Ok(socket) = socket {
                     match socket.peer_addr() {
                         Ok(peer_addr) => {
-                            eprintln!("New connection from {:?}", peer_addr);
+                            debug!("New connection from {:?}", peer_addr);
                             if let Err(e) = socket.set_nonblocking(true) {
-                                eprintln!(
+                                debug!(
                                     "Error: Cannot set socket into non-blocking mode ({:?}); ignoring socket!", e
                                 );
                             } else {
@@ -52,7 +70,7 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                             }
                         }
                         Err(e) => {
-                            eprintln!("Error: Unable to read socket's peer address: {:?}", e);
+                            debug!("Error: Unable to read socket's peer address: {:?}", e);
                         }
                     }
                 }
@@ -69,7 +87,7 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
             break;
         }
         if !t1.ok() {
-            eprintln!("Timeout while making initial connection to PV system");
+            error!("Timeout while making initial connection to PV system");
             std::process::exit(10);
         }
     }
@@ -80,12 +98,12 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
             break;
         }
         if !t2.ok() {
-            eprintln!("Timeout while making initial connection to wallbox");
+            error!("Timeout while making initial connection to wallbox");
             std::process::exit(11);
         }
     }
     if let Err(e) = mennekes_send.send(mennekesparams.clone()) {
-        eprintln!("Unable to send mennekes params: {}", e.to_string());
+        warn!("Unable to send mennekes params: {}", e.to_string());
     }
 
     loop {
@@ -95,16 +113,16 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
         if let Some(n) = mennekes.get_current_params() {
             mennekesparams = n;
             if let Err(e) = mennekes_send.send(mennekesparams.clone()) {
-                eprintln!("Unable to send mennekes params: {}", e.to_string());
+                warn!("Unable to send mennekes params: {}", e.to_string());
             }
         }
 
         if mennekesparams.control_pilot == 0 {
-            eprintln!(
+            let msg = format!(
                 "No vehicle connected, setting MAX_AMPS to the configured default of {}A",
                 config.default_amps
             );
-            mennekes.set_amps(config.default_amps);
+            mennekes.set_amps(config.default_amps, msg);
         } else {
             let current_vehicle = mennekesparams
                 .user_id
@@ -113,13 +131,13 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                 .unwrap_or("")
                 .to_uppercase();
             if let Some(vehicle_settings) = config.rfid.get(&current_vehicle) {
-                eprintln!("Connected vehicle: {}", vehicle_settings.name);
+                debug!("Connected vehicle: {}", vehicle_settings.name);
                 if mennekesparams.charging_duration < config.initial_phase_duration {
-                    eprintln!(
-                        "Vehicle connected for less than {} seconds, signalling {} amps",
-                        config.initial_phase_duration, config.default_amps
+                    let msg = format!(
+                        "Vehicle {} connected for less than {} seconds, signalling {} amps",
+                        vehicle_settings.name, config.initial_phase_duration, config.default_amps
                     );
-                    mennekes.set_amps(config.default_amps);
+                    mennekes.set_amps(config.default_amps, msg);
                     std::thread::sleep(std::time::Duration::from_secs(60));
                 } else {
                     let available_power = e3dcparams.pv_power - e3dcparams.haus_power;
@@ -129,12 +147,12 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                     let minimum_charging_power = step_power * vehicle_settings.min_amp as i32;
                     if available_power < minimum_charging_power {
                         if vehicle_settings.pv_only {
-                            eprintln!("Available PV power of {}Watts is less than minimum charging power of {}Watts. Halting charging.", available_power, minimum_charging_power);
-                            mennekes.set_amps(0);
+                            let msg = format!("Available PV power of {}Watts is less than minimum charging power of {}Watts. Halting charging.", available_power, minimum_charging_power);
+                            mennekes.set_amps(0, msg);
                             std::thread::sleep(std::time::Duration::from_secs(60));
                             continue;
                         } else {
-                            eprintln!("Available PV power of {}Watts is less than minimum charging power of {}Watts. Proceeding nevertheless.", available_power, minimum_charging_power);
+                            debug!("Available PV power of {}Watts is less than minimum charging power of {}Watts. Proceeding nevertheless.", available_power, minimum_charging_power);
                         }
                     }
                     let step_power_with_hysteresis = step_power + config.hysteresis_watts;
@@ -148,11 +166,11 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                                 ((available_power as f64) / (step_power as f64)).floor() as u16,
                             ),
                         );
-                        eprintln!(
+                        let msg = format!(
                             "Less power available than required, setting charging current to {} amps",
                             num_amps
                         );
-                        mennekes.set_amps(num_amps);
+                        mennekes.set_amps(num_amps, msg);
                         std::thread::sleep(std::time::Duration::from_secs(20));
                     } else if available_power > (charging_power + step_power_with_hysteresis)
                         && mennekesparams.hems_current < vehicle_settings.max_amp
@@ -161,28 +179,28 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                             mennekesparams.hems_current + 1,
                             vehicle_settings.min_amp,
                         );
-                        eprintln!(
+                        let msg = format!(
                             "Some excessive power is available, increasing charging current by 1 amp to {}A"
                             , set_to
                         );
-                        mennekes.set_amps(set_to);
+                        mennekes.set_amps(set_to, msg);
                     } else if mennekesparams.hems_current < vehicle_settings.min_amp {
                         let set_to =
                             std::cmp::max(mennekesparams.hems_current + 1, config.default_amps);
-                        eprintln!(
+                        let msg = format!(
                             "HEMS current {}A < than min_amp of {}A, increasing power to {}A",
                             mennekesparams.hems_current, vehicle_settings.min_amp, set_to
                         );
-                        mennekes.set_amps(set_to);
+                        mennekes.set_amps(set_to, msg);
                         std::thread::sleep(std::time::Duration::from_secs(20));
                     }
                 }
             } else {
-                eprintln!(
+                let msg = format!(
                     "Unknown RFID tag {}, setting MAX_AMPS to 0!",
                     current_vehicle
                 );
-                mennekes.set_amps(0);
+                mennekes.set_amps(0, msg);
                 std::thread::sleep(std::time::Duration::from_secs(600));
             }
         }
@@ -234,7 +252,7 @@ fn handle_requests(
         let load_bytes = load.as_bytes();
         for (i, (socket, socket_peer_addr)) in sockets.iter_mut().enumerate() {
             if let Err(e) = socket.write_all(load_bytes) {
-                eprintln!(
+                debug!(
                     "Socket {} ({:?}) has an error: {:?} Removing from list of sockets",
                     i, socket_peer_addr, e
                 );

@@ -3,6 +3,7 @@ extern crate flate2;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate fern;
 extern crate serde_json;
 extern crate toml;
 

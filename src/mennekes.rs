@@ -7,6 +7,8 @@ use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread::{spawn, JoinHandle};
 
+use log::{debug, error, info, warn};
+
 const WAIT_AFTER_ERROR: u64 = 8;
 
 pub struct Mennekes {
@@ -20,6 +22,7 @@ pub struct Mennekes {
 #[derive(Clone)]
 struct SetAmpsAction {
     pub max_hems_current: u16,
+    pub message_if_changed: String,
 }
 
 #[derive(Clone)]
@@ -215,13 +218,11 @@ impl Mennekes {
                                     if let Ok(mut p) = params_clone.lock() {
                                         *p = Some(mennekesparams);
                                     } else {
-                                        eprintln!(
-                                            "Cannot update params, cannot acquire mutex lock"
-                                        );
+                                        warn!("Cannot update params, cannot acquire mutex lock");
                                     }
                                 }
                                 Err(e) => {
-                                    eprintln!("Error while reading from mennekes wallbox: {:?}", e);
+                                    warn!("Error while reading from mennekes wallbox: {:?}", e);
                                     break;
                                 }
                             }
@@ -232,7 +233,7 @@ impl Mennekes {
                                     match action {
                                         MennekesAction::SetAmps(amps) => {
                                             if amps.max_hems_current > 16 {
-                                                eprintln!(
+                                                warn!(
                                                     "Illegal HEMS current of {} Amps",
                                                     amps.max_hems_current
                                                 );
@@ -252,21 +253,23 @@ impl Mennekes {
                                                 })(
                                                 );
                                                 if hems_current.is_err() {
-                                                    eprintln!(
+                                                    error!(
                                                         "Unable to read HEMS current: {:?}",
                                                         hems_current.err()
                                                     );
                                                 } else {
                                                     let hems_current = hems_current.unwrap();
                                                     if hems_current == amps.max_hems_current {
-                                                        eprintln!(
+                                                        debug!(
                                                             "{} == {}, not changing value",
                                                             hems_current, amps.max_hems_current
                                                         );
                                                     } else {
                                                         match client.write_single_register(1000, amps.max_hems_current) {
-                                                            Ok(_) => eprintln!("{} -> {}, changed.", hems_current, amps.max_hems_current),
-                                                            Err(e) => eprintln!("Unable to change HEMS current! {:?}", e)
+                                                            Ok(_) => {
+                                                                info!("{}", amps.message_if_changed);
+                                                            },
+                                                            Err(e) => error!("Unable to change HEMS current! {:?}", e)
                                                         }
                                                     }
                                                 }
@@ -276,18 +279,17 @@ impl Mennekes {
                                             let regs =
                                                 modbus::binary::pack_bytes(user.user_id.as_bytes());
                                             if regs.is_err() {
-                                                eprintln!(
+                                                error!(
                                                     "Unable to pack bytes to authorize user: {:?}",
                                                     regs.err()
                                                 );
                                             } else {
                                                 let regs = regs.unwrap();
                                                 match client.write_multiple_registers(1110, &regs) {
-                                                    Ok(_) => eprintln!("User authorized."),
-                                                    Err(e) => eprintln!(
-                                                        "Unable to authorize user! {:?}",
-                                                        e
-                                                    ),
+                                                    Ok(_) => info!("User authorized."),
+                                                    Err(e) => {
+                                                        warn!("Unable to authorize user! {:?}", e)
+                                                    }
                                                 }
                                             }
                                         }
@@ -298,7 +300,7 @@ impl Mennekes {
                         }
                     }
                     Err(e) => {
-                        eprintln!("Error while connecting to mennekes wallbox: {:?}", e);
+                        warn!("Error while connecting to mennekes wallbox: {:?}", e);
                     }
                 }
                 std::thread::sleep(std::time::Duration::from_secs(WAIT_AFTER_ERROR));
@@ -318,13 +320,16 @@ impl Mennekes {
         if let Ok(mut l) = self.params.lock() {
             l.take()
         } else {
-            eprintln!("Unable to acquire mutex lock when fetching params!");
+            warn!("Unable to acquire mutex lock when fetching params!");
             None
         }
     }
 
-    pub fn set_amps(&self, max_hems_current: u16) {
-        let action = MennekesAction::SetAmps(SetAmpsAction { max_hems_current });
+    pub fn set_amps(&self, max_hems_current: u16, message_if_changed: String) {
+        let action = MennekesAction::SetAmps(SetAmpsAction {
+            max_hems_current,
+            message_if_changed,
+        });
         self.action.send(action).expect("set_amps");
     }
 
