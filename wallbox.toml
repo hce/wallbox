@@ -42,6 +42,14 @@ phase_voltage = 230
 # 8 Amps to 9 Amps happens.
 hysteresis_watts = 200
 
+# Bind to a TCP socket to export the currently measured values. This
+# can be used to monitor the PV system and EV charger by external
+# scripts. For example, you can write a simple munin script to plot
+# the measured values. Many connections can be made to this server in
+# parallel. This is read only. Once every few seconds, one line is
+# sent that contains the data in JSON format, terminated with a
+# newline character.
+bind_to = "localhost:4739"
 
 # This section contains configuration per RFID token used. For each
 # RFID token, you can specify the charging behavior individually. Be
