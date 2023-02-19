@@ -33,6 +33,12 @@ pub struct E3DCParams {
     pub self_utilisation: u8,
     pub akku_charge_percentage: u16,
     pub emergency_power: u16,
+    pub s1v: u16,
+    pub s2v: u16,
+    pub s1a: u16,
+    pub s2a: u16,
+    pub s1p: u16,
+    pub s2p: u16,
 }
 
 fn read_big_little_i32<R: Read>(mut inbuf: R) -> Result<i32> {
@@ -98,6 +104,19 @@ impl E3DC {
                                     let akku_charge_percentage =
                                         slice.read_u16::<byteorder::BE>()?;
                                     let emergency_power = slice.read_u16::<byteorder::BE>()?;
+                                    // skip 22 bytes
+                                    for _i in 0..11 {
+                                        slice.read_i16::<byteorder::BE>()?;
+                                    }
+                                    let s1v = slice.read_u16::<byteorder::BE>()?;
+                                    let s2v = slice.read_u16::<byteorder::BE>()?;
+                                    let _s3v = slice.read_u16::<byteorder::BE>()?;
+                                    let s1a = slice.read_u16::<byteorder::BE>()?;
+                                    let s2a = slice.read_u16::<byteorder::BE>()?;
+                                    let _s3a = slice.read_u16::<byteorder::BE>()?;
+                                    let s1p = slice.read_u16::<byteorder::BE>()?;
+                                    let s2p = slice.read_u16::<byteorder::BE>()?;
+                                    let _s3p = slice.read_u16::<byteorder::BE>()?;
 
                                     let update = std::time::SystemTime::now()
                                         .duration_since(std::time::UNIX_EPOCH)
@@ -123,6 +142,12 @@ impl E3DC {
                                         self_utilisation,
                                         akku_charge_percentage,
                                         emergency_power,
+                                        s1v,
+                                        s2v,
+                                        s1a,
+                                        s2a,
+                                        s1p,
+                                        s2p,
                                     })
                                 };
                                 match fetch() {
