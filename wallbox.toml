@@ -3,45 +3,50 @@
 initial_connection_timeout = 60
 
 # Address of the PV system
-e3dc = { host = "127.0.0.1", port = 5201 }
+e3dc = { host = "192.168.34.10", port = 502 }
 
 # Address of the EV charging station
-wallbox = { host = "127.0.0.1", port = 5202 }
+wallbox = { host = "192.168.34.12", port = 502 }
 
 # OnePhase or ThreePhase, this is used to compute the power per amp
 phases = "ThreePhase"
 
-# After a vehicle is connected and starts to charge, use the min_amp
-# setting regardless of the PV power available for this many seconds.
-# The primary purpose for this setting is that some vehicles get
-# confused when they are signalled that no power is available
-# immediately after being connected. 180 seconds should be a
+# After a vehicle is connected and starts to charge, use the
+# default_amps setting regardless of the PV power available for this
+# many seconds. The primary purpose for this setting is that some
+# vehicles get confused when they are signalled that no power is
+# available immediately after being connected. 180 seconds should be a
 # reasonable default.
 initial_phase_duration = 180
 
-# How many amps to set when no vehicle is connected.
-# You should not set this to zero for the following
-# reason: Some vehicles will reject the charging
-# settion altogether if initially signalled a maximum
-# current of zero. Thus, set it to something higher than
-# that. 8 Amps is a reasonable default.
+# Whenever no vehicle is connected to the EV charger, set the allowed
+# current to this value. Some vehicles refuse to charge if the allowed
+# current is zero when connected. Also, this serves as a failsafe: If
+# the management code is prevented from running for any reason, your
+# charger will still work, even if at a reduced power setting. You
+# should choose a value here that all vehicles you intend to charge
+# can deal with. 8 Amps is a reasonable default.
 default_amps = 8
 
 # The voltage per phase, used to compute ther power per amp
 phase_voltage = 230
 
-# If there is some excessive power available from the PV system,
-# we'd slowly increase the charging power by one amp at a time.
-# This setting specifies how many additional watts have to be
-# available before the increase happens.
-# For example, on a 230V three phase system, increasing the
-# charging current from 8 amps to 9 amps would increase the
-# charging power from 5520 Watts to 6210 Watts, the difference
-# being 690 Watts. With a hysteresis of 200 Watts, the amount
-# of surplus power has to be 890 Watts before the increase
-# from 8 Amps to 9 Amps happens.
+# If there is some excessive power available from the PV system, we'd
+# slowly increase the charging power by one amp at a time. This
+# setting specifies how many additional watts have to be available
+# before the increase happens. For example, on a 230V three phase
+# system, increasing the charging current from 8 amps to 9 amps would
+# increase the charging power from 5520 Watts to 6210 Watts, the
+# difference being 690 Watts. With a hysteresis of 200 Watts, the
+# amount of surplus power has to be 890 Watts before the increase from
+# 8 Amps to 9 Amps happens.
 hysteresis_watts = 200
 
+
+# This section contains configuration per RFID token used. For each
+# RFID token, you can specify the charging behavior individually. Be
+# sure to remove any trailing spaces from the RFID tag and use CAPITAL
+# letters for hexadecimal digits only.
 
 [rfid.041dxxxxxxxxxx]
 # The name of the RFID tag
@@ -60,6 +65,7 @@ max_amp = 16
 
 [rfid.046bxxxxxxxxxx]
 name = "Maria"
+# If no PV power is available, halt the charging process.
 pv_only = true
 min_amp = 8
 max_amp = 16

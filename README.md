@@ -35,3 +35,14 @@ Specifically:
 * A Doepke DCTR B-X Hz residual current monitoring system
 
 
+## Getting started
+
+Run ``cargo build --release`` to build the release. (I'm using the musl flavor
+to build a static binary that I can deploy to my "solar router" -- an APU2 with
+wifi for uplink and some ports to connect the EV charger+PV system to)
+
+Then have a look at ``wallbox.toml``. Edit the file to suit your needs.
+
+Do contact me at hc-solarstrom@hce.li for comments, questions etc. :-)
+
+
