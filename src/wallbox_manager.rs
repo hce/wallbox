@@ -1,7 +1,7 @@
 use crate::e3dc::E3DCParams;
 use crate::mennekes::MennekesParams;
 use crate::*;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use std::io::{Result, Write};
 use std::net::{SocketAddr, TcpStream};
 use std::sync::mpsc::{channel, Receiver};
@@ -25,11 +25,13 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                 message
             ))
         })
-        .level(log::LevelFilter::Info)
         .chain(std::io::stdout())
+        .level(log::LevelFilter::Info)
         .chain(fern::log_file("wallbox-manager.log")?)
         .apply()
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+
+    info!("Wallbox manager initializing");
 
     let e3dc = Arc::new(
         E3DC::new(
@@ -78,6 +80,7 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
         });
     }
 
+    info!("Making initial connection to the PV system...");
     let mut e3dcparams;
     let mut mennekesparams;
     let t1 = Timeouter::new(config.initial_connection_timeout);
@@ -91,6 +94,8 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
             std::process::exit(10);
         }
     }
+
+    info!("Making initial connection to the EV charger...");
     let t2 = Timeouter::new(config.initial_connection_timeout);
     loop {
         if let Some(n) = mennekes.get_current_params() {
@@ -106,6 +111,8 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
         warn!("Unable to send mennekes params: {}", e.to_string());
     }
 
+    info!("Starting main event loop");
+    let mut current_rfid = None::<String>;
     loop {
         if let Some(n) = e3dc.get_current_params() {
             e3dcparams = n;
@@ -118,6 +125,9 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
         }
 
         if mennekesparams.control_pilot == 0 {
+            if let Some(vn) = current_rfid.take() {
+                info!("Vehicle disconnected ({})", vn);
+            }
             let msg = format!(
                 "No vehicle connected, setting MAX_AMPS to the configured default of {}A",
                 config.default_amps
@@ -131,13 +141,29 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                 .unwrap_or("")
                 .to_uppercase();
             if let Some(vehicle_settings) = config.rfid.get(&current_vehicle) {
-                debug!("Connected vehicle: {}", vehicle_settings.name);
+                if current_rfid.is_none()
+                    || current_rfid.as_ref().unwrap().ne(&vehicle_settings.name)
+                {
+                    info!("Vehicle connected: {}", vehicle_settings.name);
+                    current_rfid = Some(vehicle_settings.name.clone());
+                }
                 if mennekesparams.charging_duration < config.initial_phase_duration {
                     let msg = format!(
                         "Vehicle {} connected for less than {} seconds, signalling {} amps",
                         vehicle_settings.name, config.initial_phase_duration, config.default_amps
                     );
                     mennekes.set_amps(config.default_amps, msg);
+                    std::thread::sleep(std::time::Duration::from_secs(60));
+                } else if vehicle_settings.max_charge.is_some()
+                    && vehicle_settings.max_charge.unwrap() < mennekesparams.current_energy
+                {
+                    let msg = format!(
+                        "Vehicle {} has charged {}Wh, the limit is {}Wh. Stopping the charging.",
+                        vehicle_settings.name,
+                        mennekesparams.current_energy,
+                        vehicle_settings.max_charge.unwrap()
+                    );
+                    mennekes.set_amps(0, msg);
                     std::thread::sleep(std::time::Duration::from_secs(60));
                 } else {
                     let available_power = e3dcparams.pv_power - e3dcparams.haus_power;

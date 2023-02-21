@@ -70,6 +70,8 @@ pv_only = false
 min_amp = 8
 # The maximum current supported by the EV charging station
 max_amp = 16
+# Limit the energy to charge per transaction to 30000 Watthours
+max_charge = 30000
 
 [rfid.046bxxxxxxxxxx]
 name = "Maria"
