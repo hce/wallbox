@@ -3,8 +3,10 @@
 ## Important note
 
 The code that adjusts the charging power HAS RECEIVED LITTLE TESTING YET. The
-EV charger was installed today, and I'll probably make adjustments and fine
-tune the code over time. USE AT YOUR OWN RISK!!
+EV charger was installed a few days ago, and I'll probably make adjustments and
+fine tune the code over time. USE AT YOUR OWN RISK!!
+
+Update: Today (Feb 22nd 2023) I was able to test the surplus charging algorithm and did identify a few issues which I fixed. More testing is going to happen soon, depending on how much the sun will shine (literally) :-)
 
 ## What is it?
 
