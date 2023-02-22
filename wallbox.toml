@@ -83,17 +83,17 @@ max_amp = 16
 # than they do with min_amp+1. This may be due to a high amount of
 # reactive power or some other reason I haven't been able to figure out yet.
 # This setting overrides the computed charging power for the min_amp setting.
-# It is only necessare to specify it for RFID cards that have the
+# It is only necessary to specify it for RFID cards that have the
 # pv_only setting set to true, because otherwise, the min_amp setting will
 # be applied anyway (and not 0 to stop the charging process).
-minimum_charging_power = 2500
+minimum_charging_power = 2300
 
 [rfid.042Exxxxxxxxxx]
 name = "misc 1"
 pv_only = true
 min_amp = 8
 max_amp = 16
-minimum_charging_power = 2500
+minimum_charging_power = 2300
 
 [rfid.0435xxxxxxxxxx]
 name = "misc 2"
@@ -106,5 +106,5 @@ name = "misc 3"
 pv_only = true
 min_amp = 8
 max_amp = 16
-minimum_charging_power = 2500
+minimum_charging_power = 2300
 
