@@ -22,6 +22,7 @@ pub struct ConfigRfid {
     pub min_amp: u16,
     pub max_amp: u16,
     pub max_charge: Option<u32>,
+    pub minimum_charging_power: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
