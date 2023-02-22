@@ -13,7 +13,7 @@ phases = "ThreePhase"
 
 # After a vehicle is connected and starts to charge, use the
 # default_amps setting regardless of the PV power available for this
-# many seconds. The primary purpose for this setting is that some
+# many seconds. The primary purpose of this setting is that some
 # vehicles get confused when they are signalled that no power is
 # available immediately after being connected. 180 seconds should be a
 # reasonable default.
