@@ -19,13 +19,12 @@ phases = "ThreePhase"
 # reasonable default.
 initial_phase_duration = 180
 
-# Whenever no vehicle is connected to the EV charger, set the allowed
-# current to this value. Some vehicles refuse to charge if the allowed
-# current is zero when connected. Also, this serves as a failsafe: If
-# the management code is prevented from running for any reason, your
-# charger will still work, even if at a reduced power setting. You
-# should choose a value here that all vehicles you intend to charge
-# can deal with. 8 Amps is a reasonable default.
+# Whenever no vehicle is connected to the EV charger, set the allowed current
+# to this value. Some vehicles refuse to charge at all if the allowed current
+# is zero when connected. Also, this serves as a failsafe: If the management
+# code is prevented from running for any reason, your charger will still work,
+# even if at a reduced power setting. You should choose a value here that all
+# vehicles you intend to charge can deal with. 8 Amps is a reasonable default.
 default_amps = 8
 
 # The voltage per phase, used to compute ther power per amp
