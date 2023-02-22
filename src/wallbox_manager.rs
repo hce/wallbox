@@ -171,7 +171,7 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                     let step_power =
                         (1/* amps */) * config.phase_voltage as i32 * config.phases.number() as i32;
                     let minimum_charging_power = step_power * vehicle_settings.min_amp as i32;
-                    if available_power < minimum_charging_power {
+                    if e3dcparams.pv_power < minimum_charging_power {
                         if vehicle_settings.pv_only {
                             let msg = format!("Available PV power of {}Watts is less than minimum charging power of {}Watts. Halting charging.", available_power, minimum_charging_power);
                             mennekes.set_amps(0, msg);
