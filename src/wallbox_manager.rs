@@ -166,8 +166,9 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                     mennekes.set_amps(0, msg);
                     std::thread::sleep(std::time::Duration::from_secs(60));
                 } else {
-                    let available_power = e3dcparams.pv_power - e3dcparams.haus_power;
                     let charging_power = mennekesparams.power as i32;
+                    let available_power =
+                        e3dcparams.pv_power + charging_power - e3dcparams.haus_power;
                     let step_power =
                         (1/* amps */) * config.phase_voltage as i32 * config.phases.number() as i32;
                     let minimum_charging_power = step_power * vehicle_settings.min_amp as i32;
