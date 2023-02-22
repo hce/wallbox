@@ -171,6 +171,7 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                         e3dcparams.pv_power + charging_power - e3dcparams.haus_power;
                     let step_power =
                         (1/* amps */) * config.phase_voltage as i32 * config.phases.number() as i32;
+                    let charging_power_computed = (mennekesparams.hems_current as i32) * step_power;
                     let minimum_charging_power = step_power * vehicle_settings.min_amp as i32;
                     if e3dcparams.pv_power < minimum_charging_power {
                         if vehicle_settings.pv_only {
@@ -199,7 +200,8 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                         );
                         mennekes.set_amps(num_amps, msg);
                         std::thread::sleep(std::time::Duration::from_secs(20));
-                    } else if available_power > (charging_power + step_power_with_hysteresis)
+                    } else if available_power
+                        > (charging_power_computed + step_power_with_hysteresis)
                         && mennekesparams.hems_current < vehicle_settings.max_amp
                     {
                         let set_to = std::cmp::max(
@@ -207,8 +209,8 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                             vehicle_settings.min_amp,
                         );
                         let msg = format!(
-                            "Some excessive power is available, increasing charging current by 1 amp to {}A"
-                            , set_to
+                            "Some excessive power {}W is available, increasing charging current by 1 amp to {}A"
+                            , available_power, set_to
                         );
                         mennekes.set_amps(set_to, msg);
                     } else if mennekesparams.hems_current < vehicle_settings.min_amp {
