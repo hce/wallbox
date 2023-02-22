@@ -45,7 +45,7 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
         Mennekes::new(
             &config.wallbox.host,
             config.wallbox.port.unwrap_or(MODBUS_DEFAULT_PORT),
-            std::time::Duration::from_secs(60),
+            std::time::Duration::from_secs(15),
         )
         .expect("Create mennekes object"),
     );
