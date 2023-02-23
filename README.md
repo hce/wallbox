@@ -47,4 +47,20 @@ Then have a look at ``wallbox.toml``. Edit the file to suit your needs.
 
 Do contact me at hc-solarstrom@hce.li for comments, questions etc. :-)
 
+## Example log
 
+To illustrate what it does, here is a small log excerpt from my first test
+a few days ago:
+
+    [2023-02-22][12:57:24][wallbox::wallbox_manager][INFO] Vehicle connected: Maria
+    [2023-02-22][12:57:24][wallbox::mennekes][INFO] Vehicle Maria connected for less than 180 seconds, signalling 8 amps
+    [2023-02-22][13:02:43][wallbox::mennekes][INFO] Some excessive power is available, increasing charging current by 1 amp to 9A
+    [2023-02-22][13:03:43][wallbox::mennekes][INFO] Some excessive power is available, increasing charging current by 1 amp to 10A
+    [2023-02-22][13:04:44][wallbox::mennekes][INFO] Some excessive power is available, increasing charging current by 1 amp to 11A
+    [2023-02-22][13:15:19][wallbox::mennekes][INFO] Available PV power of 2293Watts is less than minimum charging power of 2300Watts. Halting charging.
+    [2023-02-22][13:20:33][wallbox::mennekes][INFO] Some excessive power 3150W is available, increasing charging current to 8A
+    [2023-02-22][13:33:20][wallbox::mennekes][INFO] Available PV power of 1466Watts is less than minimum charging power of 2300Watts. Halting charging.
+    [2023-02-22][13:50:53][wallbox::wallbox_manager][INFO] Vehicle disconnected (Maria)
+    [2023-02-22][13:50:54][wallbox::mennekes][INFO] No vehicle connected, setting MAX_AMPS to the configured default of 8A
+    
+    
