@@ -45,7 +45,7 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
         Mennekes::new(
             &config.wallbox.host,
             config.wallbox.port.unwrap_or(MODBUS_DEFAULT_PORT),
-            std::time::Duration::from_secs(15),
+            std::time::Duration::from_secs(2),
         )
         .expect("Create mennekes object"),
     );
@@ -164,7 +164,6 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                         vehicle_settings.max_charge.unwrap()
                     );
                     mennekes.set_amps(0, msg);
-                    std::thread::sleep(std::time::Duration::from_secs(60));
                 } else {
                     let charging_power = mennekesparams.power as i32;
                     let available_power =
@@ -175,11 +174,17 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                     let minimum_charging_power = vehicle_settings
                         .minimum_charging_power
                         .unwrap_or(step_power * vehicle_settings.min_amp as i32);
+                    debug!(
+                        "PV_Power {}W HausPower {}W",
+                        e3dcparams.pv_power, e3dcparams.haus_power
+                    );
+                    debug!("Charging power {}W Available power {}W Step power {}W ChargingPowerComputed {}W",
+                        charging_power, available_power, step_power, charging_power_computed);
                     if available_power < minimum_charging_power {
                         if vehicle_settings.pv_only {
                             let msg = format!("Available PV power of {}Watts is less than minimum charging power of {}Watts. Halting charging.", available_power, minimum_charging_power);
                             mennekes.set_amps(0, msg);
-                            std::thread::sleep(std::time::Duration::from_secs(60));
+                            std::thread::sleep(std::time::Duration::from_secs(5));
                             continue;
                         } else {
                             debug!("Available PV power of {}Watts is less than minimum charging power of {}Watts. Proceeding nevertheless.", available_power, minimum_charging_power);
@@ -201,7 +206,6 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                             num_amps
                         );
                         mennekes.set_amps(num_amps, msg);
-                        std::thread::sleep(std::time::Duration::from_secs(20));
                     } else if available_power
                         > (charging_power_computed + step_power_with_hysteresis)
                         && mennekesparams.hems_current < vehicle_settings.max_amp
@@ -223,7 +227,6 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                             mennekesparams.hems_current, vehicle_settings.min_amp, set_to
                         );
                         mennekes.set_amps(set_to, msg);
-                        std::thread::sleep(std::time::Duration::from_secs(20));
                     }
                 }
             } else {
@@ -232,7 +235,7 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                     current_vehicle
                 );
                 mennekes.set_amps(0, msg);
-                std::thread::sleep(std::time::Duration::from_secs(600));
+                std::thread::sleep(std::time::Duration::from_secs(60));
             }
         }
 

@@ -187,8 +187,8 @@ impl E3DC {
     }
 
     pub fn get_current_params(&self) -> Option<E3DCParams> {
-        if let Ok(mut l) = self.params.lock() {
-            l.take()
+        if let Ok(l) = self.params.lock() {
+            l.clone()
         } else {
             eprintln!("Unable to acquire mutex lock when fetching params!");
             None
