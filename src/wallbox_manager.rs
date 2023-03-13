@@ -184,7 +184,7 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                         if vehicle_settings.pv_only {
                             let msg = format!("Available PV power of {}Watts is less than minimum charging power of {}Watts. Halting charging.", available_power, minimum_charging_power);
                             mennekes.set_amps(0, msg);
-                            std::thread::sleep(std::time::Duration::from_secs(5));
+                            std::thread::sleep(std::time::Duration::from_secs(120));
                             continue;
                         } else {
                             debug!("Available PV power of {}Watts is less than minimum charging power of {}Watts. Proceeding nevertheless.", available_power, minimum_charging_power);
