@@ -1,5 +1,7 @@
 # wallbox
 
+![Charging session](wallbox-day.png)
+
 ## Important note
 
 The code that adjusts the charging power HAS RECEIVED LITTLE TESTING
@@ -14,6 +16,10 @@ going to happen soon, depending on how much the sun will shine
 
 Mar 13 2023: Identified and solved an important race condition that
 interfered with the charging alrorithm.
+
+I now consider this code stable enough to be running unsupervised. I
+am still not making any guarantees, however (also do check the LICENSE
+file, please)
 
 ## What is it?
 
