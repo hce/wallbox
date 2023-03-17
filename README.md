@@ -2,24 +2,16 @@
 
 ![Charging session](wallbox-day.png) ![PV Hausverbrauch](power_house-day.png)
 
+(Scroll down for an explanation of the images)
+
 ## Important note
 
-The code that adjusts the charging power HAS RECEIVED LITTLE TESTING
-YET. The EV charger was installed a few days ago, and I'll probably
-make adjustments and fine tune the code over time. USE AT YOUR OWN
-RISK!!
+The code that adjusts the charging power HAS RECEIVED COMPARATIVELY LITTLE
+TESTING YET. 
 
-Update: Today (Feb 22nd 2023) I was able to test the surplus charging
-algorithm and did identify a few issues which I fixed. More testing is
-going to happen soon, depending on how much the sun will shine
-(literally) :-)
-
-Mar 13 2023: Identified and solved an important race condition that
-interfered with the charging alrorithm.
-
-I now consider this code stable enough to be running unsupervised. I
-am still not making any guarantees, however (also do check the LICENSE
-file, please)
+After using it myself for a few weeks now and fixing a few critical bugs, I now
+consider this code base stable enough to be running unsupervised. I am still
+not making any guarantees, however (also do check the LICENSE file, please)
 
 ## What is it?
 
@@ -60,6 +52,21 @@ Then have a look at ``wallbox.toml``. Edit the file to suit your needs.
 
 Do contact me at hc-solarstrom@hce.li for comments, questions etc. :-)
 
+## Explanation of the munin images
+
+The first image shows the computed surplus power available and the
+power used by the electric vehicle to charge.
+
+The second image shows the PV power available, the power used in the
+house, the power exported/imported to the power grid and the power
+used to charge/decharge the PV batteries. On day one, the electric
+vehicle was connected to the charging outlet. You can see that the
+power consumed in the house (which includes the EV charging power) is
+constantly adjusted based on the PV power available. On the second
+day, the EV is not charging, so at first the PV battery charges
+(limited to 0.3C/4kWh), then all power not consumed locally is
+exported to the power grid.
+
 ## Example log
 
 To illustrate what it does, here is a small log excerpt from my first test
@@ -77,3 +84,4 @@ a few days ago:
     [2023-02-22][13:50:54][wallbox::mennekes][INFO] No vehicle connected, setting MAX_AMPS to the configured default of 8A
     
     
+
