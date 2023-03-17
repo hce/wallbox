@@ -1,6 +1,6 @@
 # wallbox
 
-![Charging session](wallbox-day.png)
+![Charging session](wallbox-day.png) ![PV Hausverbrauch](power_house-day.png)
 
 ## Important note
 
