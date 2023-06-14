@@ -80,7 +80,6 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
         });
     }
 
-    info!("Making initial connection to the PV system...");
     let mut e3dcparams;
     let mut mennekesparams;
     let t1 = Timeouter::new(config.initial_connection_timeout);
@@ -95,7 +94,6 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
         }
     }
 
-    info!("Making initial connection to the EV charger...");
     let t2 = Timeouter::new(config.initial_connection_timeout);
     loop {
         if let Some(n) = mennekes.get_current_params() {
@@ -110,6 +108,7 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
     if let Err(e) = mennekes_send.send(mennekesparams.clone()) {
         warn!("Unable to send mennekes params: {}", e.to_string());
     }
+    info!("Successfully connected to the PV and EV systems.");
 
     info!("Starting main event loop");
     let mut current_rfid = None::<String>;
