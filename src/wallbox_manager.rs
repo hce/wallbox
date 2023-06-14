@@ -201,10 +201,7 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                                 ((available_power as f64) / (step_power as f64)).floor() as u16,
                             ),
                         );
-                        let msg = format!(
-                            "Less power available than required, setting charging current to {} amps",
-                            num_amps
-                        );
+                        let msg = format!("Reducing charging current to {}A", num_amps);
                         mennekes.set_amps(num_amps, msg);
                     } else if available_power
                         > (charging_power_computed + step_power_with_hysteresis)
@@ -215,7 +212,7 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                             vehicle_settings.min_amp,
                         );
                         let msg = format!(
-                            "Some excessive power {}W is available, increasing charging current by 1 amp to {}A"
+                            "Excessive power of {} Watts is available, increasing charging current to {}A"
                             , available_power, set_to
                         );
                         mennekes.set_amps(set_to, msg);
@@ -231,7 +228,7 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                 }
             } else {
                 let msg = format!(
-                    "Unknown RFID tag {}, setting MAX_AMPS to 0!",
+                    "Unknown RFID tag {}, setting MAX_AMPS to 0A!",
                     current_vehicle
                 );
                 mennekes.set_amps(0, msg);
