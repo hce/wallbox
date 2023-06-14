@@ -12,6 +12,7 @@ clap = { version = "*", features = ["derive"] }
 fern = "*"
 flate2 = "*"
 log = "*"
+regex = "*"
 toml = "*"
 modbus = "*"
 

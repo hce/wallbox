@@ -45,9 +45,23 @@ hysteresis_watts = 200
 # can be used to monitor the PV system and EV charger by external
 # scripts. For example, you can write a simple munin script to plot
 # the measured values. Many connections can be made to this server in
-# parallel. This is read only. Once every few seconds, one line is
+# parallel. Once every few seconds, one line is
 # sent that contains the data in JSON format, terminated with a
 # newline character.
+#
+# NOTE: This interface can also be used to SET some values.
+# This is unauthenticated, so be sure to bind it to somewhere safe.
+# Currently, the settings that can be changed on the fly are
+# the following:
+#  To override the charging limit for
+#    the CURRENT SESSION only:
+#
+#       set-energy n                 
+#   Where n is the number of Watthours (Wh).
+# So, for example, to limit charging to 25kWh, use the command
+# set-energy 25000
+# The command does not have to be terminated with a newline, but it has to
+# be sent in one chunk to the socket.
 bind_to = "localhost:4739"
 
 # This section contains configuration per RFID token used. For each

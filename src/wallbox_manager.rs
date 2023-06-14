@@ -2,11 +2,17 @@ use crate::e3dc::E3DCParams;
 use crate::mennekes::MennekesParams;
 use crate::*;
 use log::{debug, error, info, warn};
-use std::io::{Result, Write};
+use regex::Regex;
+use std::io::{Read, Result, Write};
 use std::net::{SocketAddr, TcpStream};
 use std::sync::mpsc::{channel, Receiver};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct CurrSettings {
+    pub max_session_energy: Option<u32>,
+}
 
 pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
     let config: config::Config = {
@@ -50,13 +56,20 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
         .expect("Create mennekes object"),
     );
 
+    let curr_settings = Arc::new(Mutex::new(CurrSettings {
+        max_session_energy: None,
+    }));
+
     let (mennekes_send, mennekes_recv) = channel();
     if let Some(bind_to) = config.bind_to.as_ref() {
         let e3dc = e3dc.clone();
+        let curr_settings = curr_settings.clone();
         let listener = std::net::TcpListener::bind(bind_to)?;
         listener.set_nonblocking(false)?;
         let (send_socket, recv_socket) = channel();
-        std::thread::spawn(move || handle_requests(e3dc, mennekes_recv, recv_socket));
+        std::thread::spawn(move || {
+            handle_requests(e3dc, mennekes_recv, curr_settings, recv_socket)
+        });
         std::thread::spawn(move || {
             for socket in listener.incoming() {
                 if let Ok(socket) = socket {
@@ -126,6 +139,9 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
         if mennekesparams.control_pilot == 0 {
             if let Some(vn) = current_rfid.take() {
                 info!("Vehicle disconnected ({})", vn);
+                if let Ok(mut cs) = curr_settings.lock() {
+                    cs.max_session_energy = None;
+                }
             }
             let msg = format!(
                 "No vehicle connected, setting MAX_AMPS to the configured default of {}A",
@@ -145,7 +161,14 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                 {
                     info!("Vehicle connected: {}", vehicle_settings.name);
                     current_rfid = Some(vehicle_settings.name.clone());
+                    if let Ok(mut cs) = curr_settings.lock() {
+                        cs.max_session_energy = vehicle_settings.max_charge;
+                    }
                 }
+                let curr_session_energy = curr_settings
+                    .lock()
+                    .map(|i| i.max_session_energy)
+                    .unwrap_or(None);
                 if mennekesparams.charging_duration < config.initial_phase_duration {
                     let msg = format!(
                         "Vehicle {} connected for less than {} seconds, signalling {} amps",
@@ -153,14 +176,14 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
                     );
                     mennekes.set_amps(config.default_amps, msg);
                     std::thread::sleep(std::time::Duration::from_secs(60));
-                } else if vehicle_settings.max_charge.is_some()
-                    && vehicle_settings.max_charge.unwrap() < mennekesparams.current_energy
+                } else if curr_session_energy.is_some()
+                    && curr_session_energy.unwrap() < mennekesparams.current_energy
                 {
                     let msg = format!(
                         "Vehicle {} has charged {}Wh, the limit is {}Wh. Stopping the charging.",
                         vehicle_settings.name,
                         mennekesparams.current_energy,
-                        vehicle_settings.max_charge.unwrap()
+                        curr_session_energy.unwrap()
                     );
                     mennekes.set_amps(0, msg);
                 } else {
@@ -243,11 +266,13 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
 struct CV {
     e3dc: E3DCParams,
     mennekes: MennekesParams,
+    curr_session: Option<CurrSettings>,
 }
 
 fn handle_requests(
     e3dc: Arc<E3DC>,
     mennekes_recv: Receiver<MennekesParams>,
+    curr_settings: Arc<Mutex<CurrSettings>>,
     new_sockets: Receiver<(TcpStream, SocketAddr)>,
 ) {
     let mut sockets: Vec<(TcpStream, SocketAddr)> = Vec::new();
@@ -270,12 +295,16 @@ fn handle_requests(
         }
     }
 
+    let cs = curr_settings.lock().map(|cs| (*cs).clone()).ok();
     let mut cv = CV {
         e3dc: cur_values_e3dc,
         mennekes: cur_values_mennekes,
+        curr_session: cs,
     };
 
     let mut sockets_to_remove = Vec::new();
+    let mut read_buf = [0u8; 1024];
+    let re_set_energy = Regex::new("set-energy ([0-9]+)").expect("Our regex at 0x0132");
     loop {
         let mut load = serde_json::to_string(&cv).expect("serde_json");
         load.push('\n');
@@ -287,6 +316,20 @@ fn handle_requests(
                     i, socket_peer_addr, e
                 );
                 sockets_to_remove.push(i);
+            }
+            {
+                if let Ok(read_bytes) = socket.read(&mut read_buf) {
+                    if read_bytes > 0 {
+                        let read_string = String::from_utf8_lossy(&read_buf[0..read_bytes]);
+                        if let Some(set_energy) = re_set_energy.captures(&read_string) {
+                            let m1 = set_energy.get(1).expect("Get capture at 0x0145").as_str();
+                            let m1_p: u32 = m1.parse().expect("Parse number at 0x0146");
+                            if let Ok(mut cs) = curr_settings.lock() {
+                                cs.max_session_energy = Some(m1_p);
+                            }
+                        }
+                    }
+                }
             }
         }
         // Use pop here, we need to start from the end of the sockets array
@@ -304,5 +347,6 @@ fn handle_requests(
         if let Ok(cvm) = mennekes_recv.try_recv() {
             cv.mennekes = cvm;
         }
+        cv.curr_session = curr_settings.lock().map(|cs| (*cs).clone()).ok();
     }
 }
