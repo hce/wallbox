@@ -33,7 +33,7 @@ This tool has multiple subcommands. They are:
                               exceeded (Work in progress!) 
 
 This tool is (currently) fixed to the following hardware that I own
-myself (physically, it doesn't mean that it runs free software).
+myself (physically; it doesn't mean that it runs free software).
 Specifically:
 
 * An E3DC PV system, S10 X Compact
