@@ -1,7 +1,7 @@
 use byteorder::ReadBytesExt;
 use modbus::*;
 use std::io::Result;
-use std::ops::Add;
+use std::ops::{Add, Deref};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
@@ -16,7 +16,7 @@ pub struct Mennekes {
     handler: JoinHandle<()>,
     do_run: Arc<AtomicBool>,
     params: Arc<Mutex<Option<MennekesParams>>>,
-    action: Sender<MennekesAction>,
+    action: Mutex<Sender<MennekesAction>>,
 }
 
 #[derive(Clone)]
@@ -312,13 +312,13 @@ impl Mennekes {
             handler,
             do_run,
             params,
-            action,
+            action: Mutex::new(action),
         })
     }
 
     pub fn get_current_params(&self) -> Option<MennekesParams> {
-        if let Ok(mut l) = self.params.lock() {
-            l.take()
+        if let Ok(l) = self.params.lock() {
+            (l.deref()).clone()
         } else {
             warn!("Unable to acquire mutex lock when fetching params!");
             None
@@ -330,13 +330,15 @@ impl Mennekes {
             max_hems_current,
             message_if_changed,
         });
-        self.action.send(action).expect("set_amps");
+        let action_sender = self.action.lock().unwrap();
+        action_sender.send(action).expect("set_amps");
     }
 
     #[allow(unused)]
     pub fn authorize_user(&self, user_id: String) {
         let action = MennekesAction::AuthorizeUser(AuthorizeUserAction { user_id });
-        self.action.send(action).expect("authorize_user");
+        let action_sender = self.action.lock().unwrap();
+        action_sender.send(action).expect("authorize_user");
     }
 }
 

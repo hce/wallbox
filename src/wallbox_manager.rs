@@ -7,6 +7,8 @@ use std::io::{Read, Result, Write};
 use std::net::{SocketAddr, TcpStream};
 use std::sync::mpsc::{channel, Receiver};
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::thread::sleep;
 use std::time::Duration;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -118,8 +120,17 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
             std::process::exit(11);
         }
     }
-    if let Err(e) = mennekes_send.send(mennekesparams.clone()) {
-        warn!("Unable to send mennekes params: {}", e.to_string());
+
+    {
+        let mennekes = mennekes.clone();
+        thread::spawn(move || loop {
+            if let Some(mennekesparams) = mennekes.get_current_params() {
+                if let Err(e) = mennekes_send.send(mennekesparams) {
+                    warn!("Unable to send mennekes params: {}", e.to_string());
+                }
+            }
+            sleep(Duration::from_secs(1));
+        });
     }
     info!("Successfully connected to the PV and EV systems.");
 
@@ -131,9 +142,6 @@ pub fn wallbox_manager(cmp: WallboxManagerParams) -> Result<()> {
         }
         if let Some(n) = mennekes.get_current_params() {
             mennekesparams = n;
-            if let Err(e) = mennekes_send.send(mennekesparams.clone()) {
-                warn!("Unable to send mennekes params: {}", e.to_string());
-            }
         }
 
         if mennekesparams.control_pilot == 0 {
