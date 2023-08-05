@@ -352,7 +352,7 @@ fn handle_requests(
         if let Some(cve) = e3dc.get_current_params() {
             cv.e3dc = cve;
         }
-        if let Ok(cvm) = mennekes_recv.try_recv() {
+        while let Ok(cvm) = mennekes_recv.try_recv() {
             cv.mennekes = cvm;
         }
         cv.curr_session = curr_settings.lock().map(|cs| (*cs).clone()).ok();
