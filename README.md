@@ -13,6 +13,10 @@ After using it myself for a few weeks now and fixing a few critical bugs, I now
 consider this code base stable enough to be running unsupervised. I am still
 not making any guarantees, however (also do check the LICENSE file, please)
 
+Update: I have used this project myself for ~7 months now. So far, no
+charging problems have occurred. Over 1100kWh have been charged in
+total, all PV surplus energy.
+
 ## What is it?
 
 EV vehicle charging management. Charge your car with the surplus
