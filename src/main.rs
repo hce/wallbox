@@ -102,7 +102,10 @@ pub struct EnergyMeterParams {
 #[command(args_conflicts_with_subcommands = true)]
 pub struct DecompressStreamParams {
     #[arg(short, long)]
-    pub file_name: PathBuf,
+    pub file_name: Vec<PathBuf>,
+
+    #[arg(short, long)]
+    pub output_to_sqlite: Option<String>,
 }
 
 #[derive(Debug, Args)]

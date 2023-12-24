@@ -15,6 +15,7 @@ log = "*"
 regex = "*"
 toml = "*"
 modbus = "*"
+rusqlite = { version = "*", features = ["bundled-sqlcipher"] }
 
 serde = "*"
 serde_derive = "*"
